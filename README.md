@@ -28,6 +28,7 @@ Los accesos usan el motor portátil ya existente en `../duelo-arcano/tools/godot
 ## Incluido
 
 - Bosque limitado a **64 × 64 metros**, dos claros, sendero conectado, santuario y marcadores de orientación.
+- **Colinas suaves** (rama `claude/terreno-alturas`, sin verificar todavía en la PC): mapa de alturas de 3 × 3 sectores de 22 m, muestras cada 0,5 m, malla y `HeightMapShape3D` por sector con bordes compartidos. Claros, santuario y spawn nivelados; el claro de práctica es la altura 0. Ver `docs/TERRENO.md`.
 - **155 árboles y 28 rocas** en la semilla inicial; colocación con separación mínima y zonas reservadas para circulación. Árboles, rocas y límites tienen colisiones.
 - La seed cambia la distribución, tamaños de vegetación, rocas y algunos puntos del sendero. Los claros y los lugares de práctica siguen en posiciones conocidas. Es un bosque acotado, no un generador de biomas ni terreno infinito.
 - Misma seed + reglas/versión del generador + motor reproducen la descripción del mundo. El menú permite repetir una seed o elegir otra. Seed inicial: `240926`.
@@ -53,7 +54,8 @@ Los accesos usan el motor portátil ya existente en `../duelo-arcano/tools/godot
 | Archivo | Responsabilidad |
 |---|---|
 | `scripts/world_generator.gd` | Generación de una descripción serializable; no crea nodos ni conoce combate. RNG separado para layout, árboles y rocas. |
-| `scripts/forest.gd` | Convierte la descripción en geometría, colisiones y señales del camino. |
+| `scripts/forest.gd` | Convierte la descripción en geometría, colisiones y señales del camino; apoya cada objeto en el terreno. |
+| `scripts/terrain.gd` | Malla y colisión por sector a partir de las alturas de la descripción. |
 | `scripts/explorer.gd` | Movimiento y cámara, con bloqueo explícito de orientación durante trazos. |
 | `scripts/gesture_caster.gd` | Entrada Ctrl/mouse, estados de trazado/carga, cancelación y solicitud de lanzamiento. |
 | `scripts/gesture_math.gd` | Evaluación pura por forma y dirección, independiente de escena y combate. |
@@ -67,7 +69,7 @@ Los accesos usan el motor portátil ya existente en `../duelo-arcano/tools/godot
 | `scripts/game.gd` | Conecta componentes, crea el mundo y coordina pausa/regeneración. |
 | `scripts/visuals.gd` | Geometría provisional reutilizable. |
 
-El generador admite un contexto opcional como dato reservado; todavía no cambia el bosque por problemas matemáticos. La distribución base sigue en `generator_version = 1`, motor de referencia 4.4.1. Los nuevos assets cambian apariencia y altura de troncos, conservando las posiciones y corredores. Su fingerprint describe la distribución, no una equivalencia de render ni de física entre versiones del juego.
+El generador admite un contexto opcional como dato reservado; todavía no cambia el bosque por problemas matemáticos. `generator_version = 2` agrega las alturas con un flujo aleatorio propio; sendero, árboles y rocas conservan exactamente las posiciones x/z de la versión 1 (lo comprueba `tests/terrain_tests.gd`). Motor de referencia 4.4.1. Los nuevos assets cambian apariencia y altura de troncos, conservando las posiciones y corredores. Su fingerprint describe la distribución, no una equivalencia de render ni de física entre versiones del juego.
 
 La evaluación del gesto remuestrea 32 posiciones por distancia recorrida. Ignora traslación y tamaño uniforme, conserva sentido y proporción; penaliza desviaciones y retrocesos. Umbral de aceptación: 55 %. Recorridos mínimos: 45 px para Aguja y 75 px para Brasa; límite: 1600 px/2048 muestras. El resultado se muestra como porcentaje de ajuste a la plantilla, no como probabilidad de acertar al enemigo. El tiempo se informa, pero no suma daño por sí solo. Ver GESTOS-Y-MUNDO.md.
 
@@ -75,13 +77,13 @@ La auditoría anterior y la arquitectura completa están en `docs/ARQUITECTURA-R
 
 ## Verificación
 
-**Verificar.cmd** ejecuta 40 comprobaciones de mundo/combate, 27 de gestos/carga y 8 de destrucción: **75 comprobaciones sin ventana**.
+**Verificar.cmd** ejecuta 40 comprobaciones de mundo/combate, 27 de gestos/carga, 8 de destrucción y 39 de terreno: **114 comprobaciones sin ventana**.
 
-`tests/capture.gd` agrega 23 comprobaciones gráficas con input: cámara, movimiento durante trazo, preparación sin disparo, nueva puntería al lanzar, ambos hechizos, cancelación por click derecho y pausa. Total: **98 comprobaciones**. También genera capturas reales del bosque y las guías. Ver `VERIFICACION.md`.
+`tests/capture.gd` agrega 23 comprobaciones gráficas con input: cámara, movimiento durante trazo, preparación sin disparo, nueva puntería al lanzar, ambos hechizos, cancelación por click derecho y pausa. Total: **137 comprobaciones**. Con el terreno, `capture.gd` todavía no se ejecutó (requiere GPU). También genera capturas reales del bosque y las guías. Ver `VERIFICACION.md`.
 
 ## Alcance y continuación
 
-El mapa todavía tiene suelo plano y límites fijos de 64 × 64 m. El arte usa mallas y materiales originales generados por código; es una aproximación de ambiente de bosque, no una reproducción del acabado de la referencia. No se descargaron assets ni se incorporaron modelos de Blender.
+El mapa tiene colinas suaves por mapa de alturas y límites fijos de 64 × 64 m; todavía no hay cráteres, guardado, streaming ni biomas. El arte usa mallas y materiales originales generados por código; es una aproximación de ambiente de bosque, no una reproducción del acabado de la referencia. No se descargaron assets ni se incorporaron modelos de Blender.
 
 La destrucción actual cubre árboles y rocas distribuidos por el generador. El suelo, santuario, límites y vegetación decorativa siguen sin destrucción. No hay excavación, terreno por chunks, biomas, guardado de partida/ajustes, inventario, recolección, creación de recetas, enemigos hostiles, motor de investigación, lineage ni multiplayer. La sensibilidad, seed y destrucción se reinician al cerrar.
 
