@@ -71,7 +71,7 @@ El generador admite un contexto opcional como dato reservado; todavía no cambia
 
 La evaluación del gesto remuestrea 32 posiciones por distancia recorrida. Ignora traslación y tamaño uniforme, conserva sentido y proporción; penaliza desviaciones y retrocesos. Umbral de aceptación: 55 %. Recorridos mínimos: 45 px para Aguja y 75 px para Brasa; límite: 1600 px/2048 muestras. El resultado se muestra como porcentaje de ajuste a la plantilla, no como probabilidad de acertar al enemigo. El tiempo se informa, pero no suma daño por sí solo. Ver GESTOS-Y-MUNDO.md.
 
-La auditoría anterior y la arquitectura completa están en `../ARQUITECTURA-RPG-MAGIA.md`. Se eligió un proyecto nuevo con portado selectivo de movimiento, geometría y técnica de colisión de proyectiles; no se transformó la escena de práctica del shooter.
+La auditoría anterior y la arquitectura completa están en `docs/ARQUITECTURA-RPG-MAGIA.md`. Se eligió un proyecto nuevo con portado selectivo de movimiento, geometría y técnica de colisión de proyectiles; no se transformó la escena de práctica del shooter.
 
 ## Verificación
 
@@ -87,4 +87,4 @@ La destrucción actual cubre árboles y rocas distribuidos por el generador. El 
 
 Nueva prioridad del usuario: mundo natural con desniveles y destrucción del entorno, sin construcción de bloques. Propuesta de siguiente incremento: una región pequeña de terreno volumétrico suave con colinas y cráteres persistentes, antes de extenderla por streaming. El plan está en GESTOS-Y-MUNDO.md. La investigación matemática y la creación de recetas siguen por definir.
 
-El proyecto está creado localmente; todavía no fue publicado en GitHub.
+Repositorio privado: `matiasstr/bosque-arcano`. La bitácora de sesiones está en `CLAUDE.md`.

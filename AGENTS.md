@@ -1,6 +1,6 @@
 # Bosque Arcano
 
-Proyecto independiente Godot 4.4.1 + GDScript. Leer README.md y ../ARQUITECTURA-RPG-MAGIA.md.
+Proyecto independiente Godot 4.4.1 + GDScript. Leer README.md, CLAUDE.md (bitácora) y docs/ARQUITECTURA-RPG-MAGIA.md.
 
 - Objetivo actualizado: RPG de exploración y magia con usos ofensivos, futura creación de hechizos mediante materiales y gestos. El usuario priorizó empezar por un bosque procedural pequeño.
 - Mantener separación entre controlador, descripción del mundo, presentación, combate y UI. No introducir dependencias hacia Duelo Arcano; sus accesos solo comparten el ejecutable del motor.
