@@ -1,0 +1,31 @@
+; Bosque Arcano — bosque y gestos de precisión, prototipo 0.2
+config_version=5
+
+[application]
+config/name="Bosque Arcano"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.4", "Forward Plus")
+config/use_custom_user_dir=true
+config/custom_user_dir_name="BosqueArcano"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/msaa_3d=2
+
+[physics]
+common/physics_ticks_per_second=120
+
+[debug]
+file_logging/enable_file_logging=false
+file_logging/enable_file_logging.pc=false
+
+[layer_names]
+3d_physics/layer_1="World"
+3d_physics/layer_2="Player"
+3d_physics/layer_3="Targets"

@@ -1,0 +1,93 @@
+extends SceneTree
+const Math = preload("res://scripts/gesture_math.gd")
+const Book = preload("res://scripts/spell_catalog.gd")
+const Game = preload("res://scripts/game.gd")
+var checks := 0
+var failures := 0
+
+func _initialize() -> void:
+	call_deferred("run")
+
+func check(value: bool, label: String) -> void:
+	checks += 1
+	if not value:
+		failures += 1
+	print("%s %s" % ["PASS" if value else "FAIL", label])
+
+func run() -> void:
+	var line := Math.pattern(0)
+	var vee := Math.pattern(1)
+	check(Math.evaluate(line, 0).quality > 0.999, "línea ideal alcanza máxima precisión")
+	check(Math.evaluate(vee, 1).quality > 0.999, "V ideal alcanza máxima precisión")
+	check(not Math.evaluate(PackedVector2Array([Vector2.ZERO, Vector2(0, -120)]), 0).valid, "línea invertida no vale")
+	check(not Math.evaluate(PackedVector2Array([Vector2.ZERO, Vector2(120, 0)]), 0).valid, "línea horizontal no vale")
+	check(not Math.evaluate(line, 1).valid, "línea no sustituye V")
+	check(not Math.evaluate(vee, 0).valid, "V no sustituye línea")
+	check(not Math.evaluate(PackedVector2Array([Vector2.ZERO, Vector2(0, 10)]), 0).valid, "movimiento mínimo no genera hechizo")
+	check(not Math.evaluate(PackedVector2Array(), 0).valid, "trazo vacío rechazado")
+	check(not Math.evaluate(PackedVector2Array([Vector2.ZERO, Vector2(0, 120), Vector2.ZERO, Vector2(0, 120)]), 0).valid, "repeticiones y retrocesos penalizados")
+	var shifted := PackedVector2Array([Vector2(500, -200), Vector2(500, 40)])
+	check(Math.evaluate(shifted, 0).quality > 0.999, "posición y escala uniforme no cambian precisión")
+	var sampled := PackedVector2Array()
+	for i in range(121):
+		sampled.append(Vector2(0, i))
+	check(is_equal_approx(Math.evaluate(sampled, 0).quality, Math.evaluate(line, 0).quality), "frecuencia de muestras no altera línea equivalente")
+	var tilted := Math.evaluate(PackedVector2Array([Vector2.ZERO, Vector2(15, 120)]), 0)
+	check(tilted.valid and tilted.quality < 0.95, "desviación moderada reduce calidad pero permite lanzar")
+	var poor := Book.stats(0, 0.55)
+	var perfect := Book.stats(0, 1)
+	check(perfect.damage > poor.damage and perfect.cost < poor.cost, "precisión aumenta daño y reduce maná")
+	check(Book.stats(0, 999).damage == perfect.damage, "bonificación limitada al máximo")
+	var game := Game.new()
+	root.add_child(game)
+	game.set_paused(false)
+	game.explorer.controlled = false
+	game.caster.begin()
+	game.caster.append_motion(Vector2(0, 120))
+	game.caster.finish()
+	check(not game.caster.prepared.is_empty() and game.combat.mana == 100 and game.combat.projectiles.is_empty(), "soltar Ctrl prepara sin disparar ni consumir maná")
+	game.caster.request_launch()
+	check(game.combat.last_cast.quality > 0.999 and game.combat.mana == 90, "solicitar lanzamiento consume carga y maná")
+	check(game.combat.projectiles[0].damage == 36, "proyectil conserva daño del gesto al lanzarse")
+	game.caster.request_launch()
+	check(game.combat.projectiles.size() == 1 and game.combat.mana == 90, "un gesto permite un solo disparo")
+	game.caster.begin()
+	check(game.caster.active, "se puede preparar durante cooldown")
+	game.caster.append_motion(Vector2(0, 120))
+	game.caster.finish()
+	game.caster.request_launch()
+	check(not game.caster.prepared.is_empty() and game.combat.projectiles.size() == 1, "cooldown bloquea disparo pero conserva carga")
+	game.caster.cancel()
+	game.combat.reset()
+	game.caster.selected = 1
+	game.caster.begin()
+	game.caster.append_motion(Vector2(65, 100))
+	game.caster.append_motion(Vector2(65, -100))
+	game.caster.finish()
+	game.caster.request_launch()
+	check(game.combat.last_cast.spell == 1 and game.combat.last_cast.damage == 52, "segundo hechizo usa su V y propiedades")
+	game.combat.reset()
+	game.caster.begin()
+	game.caster.append_motion(Vector2(0, 10))
+	game.caster.finish()
+	check(game.combat.mana == 100 and game.combat.projectiles.is_empty(), "gesto inválido no gasta maná ni lanza")
+	game.caster.begin()
+	game.caster.append_motion(Vector2(50, 70))
+	game.set_paused(true)
+	game.caster.finish()
+	check(not game.explorer.aim_locked and game.combat.mana == 100, "pausa cancela sin costo ni lanzamiento posterior")
+	game.set_paused(false)
+	game.caster.begin()
+	game.respawn()
+	check(not game.caster.active and not game.explorer.aim_locked, "respawn cancela modo de trazo")
+	game.caster.begin()
+	game.regenerate(42)
+	check(not game.caster.active and game.combat.projectiles.is_empty(), "regenerar cancela el gesto")
+	game.combat.mana = 0
+	game.caster.begin()
+	check(not game.caster.active, "sin maná no bloquea cámara con un ritual imposible")
+	check(is_equal_approx(Engine.time_scale, 1), "ningún ritual cambia escala temporal")
+	game.queue_free()
+	await process_frame
+	print("GESTOS: %d verificaciones, %d fallos" % [checks, failures])
+	quit(0 if failures == 0 else 1)

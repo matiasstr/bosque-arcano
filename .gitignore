@@ -1,0 +1,4 @@
+.godot/
+*.log
+test-results.txt
+tools/godot/
