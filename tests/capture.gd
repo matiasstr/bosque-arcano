@@ -1,5 +1,6 @@
 extends SceneTree
 const Game = preload("res://scripts/game.gd")
+const Generator = preload("res://scripts/world_generator.gd")
 var failures := 0
 var checks := 0
 
@@ -33,9 +34,9 @@ func run() -> void:
 	Input.parse_input_event(move)
 	await process_frame
 	verify(absf(game.explorer.yaw) > 0.1, "mouse modifica orientación")
-	game.explorer.reset_at(Vector3(0, 0.06, 25))
+	game.explorer.reset_at(Generator.spawn_point(game.forest.description))
 	await snapshot("res://preview-bosque.png")
-	game.explorer.reset_at(Vector3(-9, 0.06, 8))
+	game.explorer.reset_at(Vector3(-9, Generator.height_at(game.forest.description, -9, 8) + 0.06, 8))
 	await snapshot("res://preview-combate.png")
 	game.explorer.pitch = -1.8
 	game.explorer.update_camera()
@@ -109,7 +110,7 @@ func run() -> void:
 	verify(not game.caster.active and not game.explorer.aim_locked, "pausa cancela trazo sin lanzar")
 	await key(KEY_CTRL, false)
 	game.set_paused(false)
-	game.explorer.reset_at(Vector3(0, 0.06, 25))
+	game.explorer.reset_at(Generator.spawn_point(game.forest.description))
 	for i in range(45):
 		await process_frame
 	var start := Time.get_ticks_usec()

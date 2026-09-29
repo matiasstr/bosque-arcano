@@ -2,6 +2,7 @@ extends RefCounted
 ## Original procedural mesh library. Shared meshes/materials, no external art downloads.
 const V = preload("res://scripts/visuals.gd")
 const Destructible = preload("res://scripts/destructible_prop.gd")
+const Generator = preload("res://scripts/world_generator.gd")
 static var trunks: Array[ArrayMesh] = []
 static var crowns: Array[ArrayMesh] = []
 static var grass: ArrayMesh
@@ -119,6 +120,22 @@ static func tree(parent: Node3D, data: Dictionary, index: int) -> StaticBody3D:
 
 static func undergrowth(parent: Node3D, data: Dictionary) -> void:
 	prepare()
+	for batch in undergrowth_batches(data).values():
+		var mesh := MultiMesh.new()
+		mesh.transform_format = MultiMesh.TRANSFORM_3D
+		mesh.mesh = fern if batch.fern else grass
+		mesh.instance_count = batch.transforms.size()
+		for i in range(mesh.instance_count):
+			mesh.set_instance_transform(i, batch.transforms[i])
+		var node := MultiMeshInstance3D.new()
+		node.multimesh = mesh
+		node.material_override = leaves
+		node.visibility_range_end = 36 if batch.fern else 27
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		parent.add_child(node)
+
+## Placement data only, so it can be checked without a renderer.
+static func undergrowth_batches(data: Dictionary) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(data.seed) ^ 0x45391
 	var batches := {}
@@ -142,17 +159,5 @@ static func undergrowth(parent: Node3D, data: Dictionary) -> void:
 			batches[key] = {"fern": is_fern, "transforms": []}
 		var size := rng.randf_range(0.65, 1.25)
 		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size)
-		batches[key].transforms.append(Transform3D(basis, Vector3(p.x, 0.015, p.y)))
-	for batch in batches.values():
-		var mesh := MultiMesh.new()
-		mesh.transform_format = MultiMesh.TRANSFORM_3D
-		mesh.mesh = fern if batch.fern else grass
-		mesh.instance_count = batch.transforms.size()
-		for i in range(mesh.instance_count):
-			mesh.set_instance_transform(i, batch.transforms[i])
-		var node := MultiMeshInstance3D.new()
-		node.multimesh = mesh
-		node.material_override = leaves
-		node.visibility_range_end = 36 if batch.fern else 27
-		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		parent.add_child(node)
+		batches[key].transforms.append(Transform3D(basis, Vector3(p.x, Generator.height_at(data, p.x, p.y) + 0.015, p.y)))
+	return batches

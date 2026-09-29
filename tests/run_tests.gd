@@ -75,10 +75,10 @@ func run() -> void:
 	game.explorer.step_movement(Vector2.ZERO, false, false, false, 1.0 / 120.0)
 	check(not game.explorer.crouched, "puede levantarse al salir del techo")
 	var tree: Dictionary = game.forest.description.trees[0]
-	var trunk_start := Vector3(tree.x, 1, tree.z + 1)
+	var trunk_start := Vector3(tree.x, Generator.height_at(game.forest.description, tree.x, tree.z) + 1, tree.z + 1)
 	var ray := PhysicsRayQueryParameters3D.create(trunk_start, trunk_start - Vector3(0, 0, 2), 1)
 	check(not root.world_3d.direct_space_state.intersect_ray(ray).is_empty(), "troncos tienen colisión física")
-	game.explorer.reset_at(Vector3(0, 0.05, 30))
+	game.explorer.reset_at(Vector3(0, Generator.height_at(game.forest.description, 0, 30) + 0.05, 30))
 	await settle()
 	for i in range(140):
 		await physics_frame
@@ -121,7 +121,7 @@ func run() -> void:
 	check(game.get_child_count() == before and game.targets.size() == 3, "regenerar no acumula mapas ni blancos")
 	check(game.combat.projectiles.is_empty() and game.combat.mana == 100, "regenerar limpia proyectiles y recursos")
 	check(game.forest.description == a, "volver a semilla inicial reconstruye el bosque original")
-	check(game.explorer.position.distance_to(Generator.SPAWN) < 0.1, "regenerar devuelve al spawn seguro")
+	check(game.explorer.position.distance_to(Generator.spawn_point(game.forest.description)) < 0.1, "regenerar devuelve al spawn seguro")
 	var old_seed: int = game.world_seed
 	game.hud.seed_input.text = "incorrecto"
 	game.hud._submit_seed()

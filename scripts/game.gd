@@ -113,11 +113,11 @@ func regenerate(value: int) -> void:
 	for point in [Vector3(-12, 0, 3), Vector3(-9, 0, 1), Vector3(-6, 0, 3)]:
 		var target := Target.new()
 		forest.add_child(target)
-		target.position = point
+		target.position = Vector3(point.x, Generator.height_at(forest.description, point.x, point.z), point.z)
 		target.damaged.connect(_on_damage)
 		targets.append(target)
 	destroyed_count = 0
-	explorer.reset_at(Generator.SPAWN)
+	explorer.reset_at(Generator.spawn_point(forest.description))
 	hud.set_seed(world_seed)
 	hud.show_cast("Ctrl + trazo prepara · Click izquierdo lanza")
 	hud.update_state(combat.mana, explorer.position, destroyed_count)
@@ -125,7 +125,7 @@ func regenerate(value: int) -> void:
 func respawn() -> void:
 	caster.cancel()
 	hud.show_cast("Volviste al inicio · Ctrl + trazo prepara")
-	explorer.reset_at(Generator.SPAWN)
+	explorer.reset_at(Generator.spawn_point(forest.description))
 	combat.reset()
 
 func set_paused(value: bool) -> void:
