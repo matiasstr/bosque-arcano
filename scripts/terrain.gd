@@ -2,18 +2,44 @@ extends Node3D
 ## Materializes description.terrain: one mesh and one HeightMapShape3D per sector.
 ## Every sector reads the same global grid, so shared borders get identical vertices and normals.
 var sectors: Array[StaticBody3D] = []
+var data: Dictionary
+var material: Material
+var heights := PackedFloat32Array()
 
-func build(data: Dictionary, material: Material) -> void:
+func build(terrain: Dictionary, surface: Material) -> void:
+	data = terrain
+	material = surface
 	var samples: int = data.samples
-	var heights := PackedFloat32Array()
 	heights.resize(samples * samples)
 	for k in range(samples * samples):
 		heights[k] = data.heights_mm[k] * 0.001
 	for sz in range(data.sectors):
 		for sx in range(data.sectors):
-			sectors.append(_sector(data, heights, sx, sz, material))
+			sectors.append(_sector(sx, sz))
 
-func _sector(data: Dictionary, heights: PackedFloat32Array, sx: int, sz: int, material: Material) -> StaticBody3D:
+## Rebuilds the sectors touching a changed sample rectangle. One extra sample of margin
+## covers normals, which read neighbouring heights. Returns the rebuilt sector indices.
+func rebuild(changed: Rect2i) -> Array[int]:
+	var samples: int = data.samples
+	var cells: int = data.sector_cells
+	for j in range(changed.position.y, changed.end.y):
+		for i in range(changed.position.x, changed.end.x):
+			heights[i + j * samples] = data.heights_mm[i + j * samples] * 0.001
+	var reach := changed.grow(1)
+	var rebuilt: Array[int] = []
+	for sz in range(data.sectors):
+		for sx in range(data.sectors):
+			if not Rect2i(sx * cells, sz * cells, cells + 1, cells + 1).intersects(reach):
+				continue
+			var index: int = sx + sz * data.sectors
+			var old := sectors[index]
+			remove_child(old)
+			old.queue_free()
+			sectors[index] = _sector(sx, sz)
+			rebuilt.append(index)
+	return rebuilt
+
+func _sector(sx: int, sz: int) -> StaticBody3D:
 	var samples: int = data.samples
 	var cells: int = data.sector_cells
 	var cell: float = data.cell

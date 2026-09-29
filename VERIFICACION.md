@@ -1,5 +1,13 @@
 # Verificación — Bosque Arcano 0.2
 
+## Cráteres — 2026-09-29, rama `claude/terreno-alturas`
+
+Mismo entorno (Linux headless, sin GPU). `run_tests` 40, `gesture_tests` 27, `destruction_tests` 8 y `terrain_tests` 39 siguen sin fallos, sin cambios en sus pruebas.
+
+- `tests/crater_tests.gd` (nuevo): 19 comprobaciones, 0 fallos. Solo Brasa excava; el centro baja 0,60 m; fuera del radio nada cambia; la descripción base no se modifica; repetir las ediciones reproduce las mismas alturas; 13 impactos seguidos dejan 1,16 m de fondo con escalones ≤ 280 mm por celda; el santuario y la franja de los límites no se excavan. En escena: un cráter sobre el borde x = 11 reconstruye solo 2 sectores y uno en una esquina 4, sin grietas (vértices y normales idénticos) y con colisión igual a la malla (diferencia 0,0000 m); objetos cercanos bajan con el suelo; un proyectil real de Brasa abre un cráter y la Aguja no; el jugador entra caminando (0,95 m bajo el suelo original) y sale por el otro lado; regenerar borra los cráteres.
+- Tiempos: cráter sobre un borde 6,5–6,8 ms; en una esquina 8,9–10,2 ms (excavar, reconstruir sectores y reubicar objetos).
+- **No ejecutado:** `capture.gd` (GPU). No se vio ningún cráter en pantalla.
+
 ## Terreno por alturas — 2026-09-29, rama `claude/terreno-alturas`
 
 Motor: Godot 4.4.1 Linux x86_64 oficial, sesión en la nube **sin GPU**. Solo suites sin ventana.

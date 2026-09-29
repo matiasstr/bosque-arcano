@@ -33,6 +33,7 @@ func _ready() -> void:
 	caster.launch_requested.connect(_cast_gesture)
 	explorer.fell_outside.connect(respawn)
 	combat.cast_launched.connect(func(): explorer.kick = 1.0)
+	combat.surface_hit.connect(_on_surface_hit)
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind_caster(caster)
@@ -125,7 +126,8 @@ func regenerate(value: int) -> void:
 func respawn() -> void:
 	caster.cancel()
 	hud.show_cast("Volviste al inicio · Ctrl + trazo prepara")
-	explorer.reset_at(Generator.spawn_point(forest.description))
+	# Current ground, so a crater dug at the spawn does not drop the player from the old height.
+	explorer.reset_at(Generator.spawn_point(forest.ground))
 	combat.reset()
 
 func set_paused(value: bool) -> void:
@@ -150,6 +152,14 @@ func _cast_gesture(spell: int, result: Dictionary) -> void:
 		hud.show_cast("Precisión %d%% · %.2f s · %.0f daño · %.1f maná" % [roundi(result.quality * 100), result.seconds, combat.last_cast.damage, combat.last_cast.cost])
 	else:
 		hud.show_cast("Carga conservada · esperá el cooldown o recuperá maná")
+
+func _on_surface_hit(point: Vector3, collider: Object, spell: int) -> void:
+	var source: Dictionary = Book.SPELLS[spell]
+	if source.crater_radius <= 0 or not forest.terrain.sectors.has(collider):
+		return
+	if forest.carve_crater(point, source.crater_radius, source.crater_depth):
+		for target in targets:
+			target.position.y = minf(target.position.y, Generator.height_at(forest.ground, target.position.x, target.position.z))
 
 func _on_damage(amount: float, destroyed: bool) -> void:
 	if destroyed:

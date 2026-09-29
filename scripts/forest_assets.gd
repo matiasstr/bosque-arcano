@@ -118,8 +118,10 @@ static func tree(parent: Node3D, data: Dictionary, index: int) -> StaticBody3D:
 	collider.add_child(shape)
 	return collider
 
-static func undergrowth(parent: Node3D, data: Dictionary) -> void:
+## Returns one record per MultiMesh ({node, transforms}) so the ground can be followed later.
+static func undergrowth(parent: Node3D, data: Dictionary) -> Array:
 	prepare()
+	var records: Array = []
 	for batch in undergrowth_batches(data).values():
 		var mesh := MultiMesh.new()
 		mesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -133,6 +135,8 @@ static func undergrowth(parent: Node3D, data: Dictionary) -> void:
 		node.visibility_range_end = 36 if batch.fern else 27
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(node)
+		records.append({"node": node, "transforms": batch.transforms})
+	return records
 
 ## Placement data only, so it can be checked without a renderer.
 static func undergrowth_batches(data: Dictionary) -> Dictionary:

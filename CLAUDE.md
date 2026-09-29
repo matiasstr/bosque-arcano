@@ -19,6 +19,7 @@ $G --headless --path . --fixed-fps 120 --script res://tests/run_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/gesture_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/destruction_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/terrain_tests.gd
+$G --headless --path . --fixed-fps 120 --script res://tests/crater_tests.gd
 ```
 
 `tests/capture.gd` necesita GPU: no correrlo en la nube. La importación genera `.uid` e `.import` que no venían en el ZIP; no se versionan desde la nube (el editor en la PC los regenera).
@@ -57,3 +58,24 @@ $G --headless --path . --fixed-fps 120 --script res://tests/terrain_tests.gd
 6. Correr `capture.gd` para regenerar las capturas y mirar la vista general.
 
 **Próximo paso:** después de revisar en la PC, cráteres: editar alturas de los sectores afectados por un impacto, reconstruir solo esa malla y colisión, y resolver árboles y rocas que queden sin apoyo. Luego, guardado de seed, versión y ediciones.
+
+### 2026-09-29 — misma sesión: cráteres (en memoria)
+
+El usuario pidió continuar con el próximo paso ("continue with this") antes de revisar en la PC. Se tomó como autorización para cráteres, que el pedido original dejaba para otra sesión; guardado, streaming y biomas siguen sin empezar.
+
+**Hecho** (plan y riesgos en `docs/TERRENO.md`, sección Cráteres):
+- `spell_catalog.gd`: `crater_radius`/`crater_depth` por hechizo. Brasa Rúnica 2,2 m / 0,6 m; Aguja de Luz no excava. Sin escalar por precisión (decisión conservadora, pendiente de balance humano).
+- `terrain_edit.gd` (nuevo, puro): cuenco suave en milímetros enteros, tope de 1,5 m bajo el terreno original y limitador de escalón (≤ 280 mm por celda de 0,5 m, ~29°) que sube lo excavado hasta que se pueda salir caminando. En la práctica un cráter de 2,2 m no pasa de ~1,2 m. Protegidos: claro del santuario y franja de 2,5 m junto a los límites.
+- `magic_combat.gd` emite `surface_hit`; `game.gd` decide si hay cráter (solo si el impacto es sobre un sector de terreno). Combate no conoce el terreno.
+- `forest.gd`: copia editable de alturas (`ground`) separada de la descripción base, lista `terrain_edits` (repetible sobre la base: prepara el guardado), reconstrucción solo de los sectores tocados y reubicación hacia abajo de árboles, rocas, marcadores, sotobosque y blancos cercanos. El respawn usa el suelo actual.
+- `tests/crater_tests.gd` (nuevo, 19 verificaciones), agregado a `Verificar.cmd`.
+
+**Verificado ejecutando:** `run_tests` 40, `gesture_tests` 27, `destruction_tests` 8, `terrain_tests` 39, `crater_tests` 19; 0 fallos. Cráter en un borde 6,5–6,8 ms; en una esquina 8,9–10,2 ms.
+
+**No verificado:** cómo se ve un cráter (sin GPU), el sombreado del sendero dentro del cráter, sensación de juego, y `capture.gd`. No hay partículas ni efecto nuevo de excavación.
+
+**Consumo:** sigue sin haber acceso al saldo; no hay cifra.
+
+**Revisar en la PC** (además de la lista anterior): `Verificar.cmd` debe dar 40 + 27 + 8 + 39 + 19. En partida, con 2 (Brasa) disparar al suelo: ver el cráter, entrar y salir caminando, disparar varias veces al mismo punto, disparar sobre un borde entre sectores (X o Z = ±11) y buscar grietas, disparar cerca de árboles, rocas, marcadores y cristales y ver que no floten. Árboles al borde del cráter se hunden enteros: decidir si eso alcanza o si hay que romperlos.
+
+**Próximo paso:** guardado local (seed, versión, `destroyed_props` y `terrain_edits` en `user://`), reconstruyendo base + ediciones al cargar.

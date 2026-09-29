@@ -23,3 +23,11 @@ Alcance de este incremento: colinas suaves con una altura por posición. Cráter
 6. **Costo:** unas 17.700 muestras en GDScript y 9 mallas/colisiones por generación. Se mide; si pasa de ~200 ms, optimizar antes de agregar streaming.
 7. **Pruebas con alturas fijas:** las que usan spawn, bordes o troncos se adaptan a la altura real; las de combate siguen iguales gracias al nivel 0 del claro.
 8. **Futuro:** alturas por sector permiten editar cráteres y reconstruir solo sectores afectados; no permiten cuevas ni salientes (requieren volumétrico).
+
+## Cráteres (incremento siguiente, en memoria)
+
+- **Qué los produce:** un impacto de Brasa Rúnica sobre el suelo. La Aguja de Luz no excava. Radio y profundidad viven en `spell_catalog.gd` (2,2 m y 0,6 m, sin escalar por precisión todavía).
+- **Datos:** `terrain_edit.gd` (puro, sin nodos) baja las alturas con un cuenco suave. Nunca excava más de 1,5 m bajo el terreno original; en la práctica, con radio 2,2 m el limitador de pendiente deja el fondo en ~1,2 m aunque se repitan impactos. Después, un limitador sube las muestras excavadas hasta que ningún escalón entre vecinas supere 0,28 m por celda (~29°), para que siempre se pueda salir caminando. Todo en milímetros enteros: repetir la lista de ediciones sobre la base reproduce las mismas alturas, lo que prepara el guardado.
+- **Protegido:** el claro del santuario y una franja de 2,5 m junto a los límites (no se abren huecos bajo los muros).
+- **Escena:** el bosque guarda una copia editable de las alturas y la lista de ediciones; `terrain.gd` reconstruye solo los sectores que tocan el cráter (con una muestra de margen para las normales). Árboles, rocas, marcadores, blancos y sotobosque cercanos se bajan al nuevo suelo; nunca suben.
+- **Límites y riesgos:** sin guardado (regenerar o cerrar restaura el terreno), sin derrumbes, sin fragmentos ni partículas nuevas; un árbol al borde del cráter se hunde entero en lugar de quedar con raíces expuestas. Varios impactos seguidos reconstruyen hasta 4 sectores cada vez: medir el costo.

@@ -5,10 +5,18 @@ const Generator = preload("res://scripts/world_generator.gd")
 const Assets = preload("res://scripts/forest_assets.gd")
 const Destructible = preload("res://scripts/destructible_prop.gd")
 const Terrain = preload("res://scripts/terrain.gd")
+const TerrainEdit = preload("res://scripts/terrain_edit.gd")
 var description: Dictionary
 var destroyed_props: Dictionary = {}
 var terrain: Node3D
 var sanctuary: Node3D
+## Editable copy of the heights ({"terrain": ...}, same shape as the description for height_at).
+## The description itself stays the unedited base.
+var ground: Dictionary
+## Craters applied in order; replaying them over the base rebuilds the same ground (future saving).
+var terrain_edits: Array = []
+var undergrowth: Array = []
+var markers: Array = []
 
 func build(data: Dictionary) -> void:
 	description = data
@@ -19,9 +27,11 @@ func build(data: Dictionary) -> void:
 	for pair in data.path:
 		route.append(Vector2(pair[0], pair[1]))
 	mat.set_shader_parameter("route", route)
+	ground = {"terrain": data.terrain.duplicate()}
+	ground.terrain.heights_mm = data.terrain.heights_mm.duplicate()
 	terrain = Terrain.new()
 	add_child(terrain)
-	terrain.build(data.terrain, mat)
+	terrain.build(ground.terrain, mat)
 	for index in range(data.trees.size()):
 		var entry: Dictionary = data.trees[index]
 		var tree := Assets.tree(self, entry, index)
@@ -52,7 +62,7 @@ func build(data: Dictionary) -> void:
 		body.add_child(collision)
 	_boundaries()
 	_landmarks()
-	Assets.undergrowth(self, data)
+	undergrowth = Assets.undergrowth(self, data)
 
 func _on_prop_destroyed(prop_id: String, kind: String) -> void:
 	destroyed_props[prop_id] = true
@@ -114,5 +124,42 @@ func _landmarks() -> void:
 		var x: float = pair[0] + 1.9
 		var z: float = pair[1]
 		var p := Vector3(x, Generator.footprint_min(description, x, z, 0.16) + 0.35, z)
-		V.cylinder(self, p, 0.16, 0.12, 0.8, Color("665744"))
-		V.sphere(self, p + Vector3.UP * 0.5, 0.16, Color("f1cf7a"), true)
+		markers.append([V.cylinder(self, p, 0.16, 0.12, 0.8, Color("665744")), V.sphere(self, p + Vector3.UP * 0.5, 0.16, Color("f1cf7a"), true)])
+
+## Digs a crater, rebuilds only the touched sectors and lowers nearby objects onto the new
+## ground. Returns false when the spot is protected or nothing changed.
+func carve_crater(point: Vector3, radius: float, depth: float) -> bool:
+	var edit := {"x": snappedf(point.x, 0.01), "z": snappedf(point.z, 0.01), "radius": radius, "depth": depth}
+	var changed := TerrainEdit.carve(ground.terrain, description.terrain.heights_mm, edit.x, edit.z, radius, depth)
+	if not changed.has_area():
+		return false
+	terrain_edits.append(edit)
+	terrain.rebuild(changed)
+	_settle_near(Vector2(edit.x, edit.z), radius + 2.5)
+	return true
+
+## Objects only ever move down: craters never raise the ground.
+func _settle_near(center: Vector2, reach: float) -> void:
+	for node in get_children():
+		var id = node.get("prop_id")
+		if id == null or Vector2(node.position.x, node.position.z).distance_to(center) > reach:
+			continue
+		var index := int(String(id).split(":")[1])
+		if String(id).begins_with("tree:"):
+			var entry: Dictionary = description.trees[index]
+			node.position.y = minf(node.position.y, Generator.footprint_min(ground, entry.x, entry.z, entry.radius * 2.0) - 0.05)
+		else:
+			node.position.y = minf(node.position.y, rock_center_y(ground, description.rocks[index]))
+	for pair in markers:
+		var p: Vector3 = pair[0].position
+		if Vector2(p.x, p.z).distance_to(center) <= reach:
+			var y := minf(p.y, Generator.footprint_min(ground, p.x, p.z, 0.16) + 0.35)
+			pair[0].position.y = y
+			pair[1].position.y = y + 0.5
+	for record in undergrowth:
+		for i in range(record.transforms.size()):
+			var transform: Transform3D = record.transforms[i]
+			if Vector2(transform.origin.x, transform.origin.z).distance_to(center) <= reach:
+				transform.origin.y = minf(transform.origin.y, Generator.height_at(ground, transform.origin.x, transform.origin.z) + 0.015)
+				record.transforms[i] = transform
+				record.node.multimesh.set_instance_transform(i, transform)

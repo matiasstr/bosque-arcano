@@ -1,6 +1,8 @@
 extends Node3D
 ## Offensive spell prototype; no crafting/research coupling.
 signal cast_launched
+## Every impact point, so the world can react (craters) without combat knowing the terrain.
+signal surface_hit(point: Vector3, collider: Object, spell: int)
 const V = preload("res://scripts/visuals.gd")
 const Book = preload("res://scripts/spell_catalog.gd")
 var enabled := false
@@ -25,7 +27,7 @@ func fire(origin: Vector3, direction: Vector3, spell: int = 0, quality: float = 
 	cooldown = stats.cooldown
 	since_cast = 0
 	var mesh := V.sphere(self, origin, 0.075 if spell == 0 else 0.13, stats.color, true)
-	projectiles.append({"node": mesh, "velocity": direction.normalized() * stats.speed, "life": 2.5, "damage": stats.damage, "color": stats.color, "trail": 0.0})
+	projectiles.append({"node": mesh, "velocity": direction.normalized() * stats.speed, "life": 2.5, "damage": stats.damage, "color": stats.color, "trail": 0.0, "spell": spell})
 	last_cast = {"spell": spell, "quality": quality, "damage": stats.damage, "cost": stats.cost, "origin": origin, "direction": direction.normalized()}
 	cast_launched.emit()
 	return true
@@ -50,6 +52,7 @@ func _physics_process(delta: float) -> void:
 			if not hit.is_empty():
 				if hit.collider.has_method("take_damage"):
 					hit.collider.take_damage(shot.damage)
+				surface_hit.emit(hit.position, hit.collider, shot.spell)
 				for n in range(6):
 					var offset := Vector3(cos(n * TAU / 6), sin(n * TAU / 6), 0) * 0.1
 					var spark := V.sphere(self, hit.position + offset, 0.08, shot.color, true)
