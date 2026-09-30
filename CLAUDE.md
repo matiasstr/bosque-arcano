@@ -6,6 +6,7 @@
 @docs/ARQUITECTURA-RPG-MAGIA.md
 @docs/TERRENO.md
 @docs/GUARDADO.md
+@docs/MOTOR-CALCULO.md
 
 `docs/CONTEXTO-PARA-CLAUDE.md` y `docs/ARQUITECTURA-RPG-MAGIA.md` son del 24–28/09 y describen el estado previo a esta bitácora; ante diferencias manda la entrada más reciente de abajo.
 
@@ -101,4 +102,4 @@ El usuario pidió seguir con el próximo paso y, al terminarlo, revisar el motor
 
 **Revisar en la PC:** `Verificar.cmd` = 40 + 27 + 8 + 39 + 19 + 23. En partida: romper un árbol y hacer un cráter, cerrar con la X, abrir de nuevo y ver el aviso "Mundo recuperado" con el cráter y el árbol faltante. Buscar `mundo.json` en `%APPDATA%\BosqueArcano`. Elegir otra semilla desde el menú y comprobar que al reabrir aparece esa.
 
-**Próximo paso:** decidir el problema del motor de cálculo (ver resumen de la sesión) antes de programarlo.
+**Próximo paso:** que el usuario elija el primer problema del motor de cálculo (`docs/MOTOR-CALCULO.md`: A ruta sobre el terreno, recomendada para calibrar; B viajante chico; C empaquetado; D problema propio) y recién entonces programar el primer incremento descrito ahí.
