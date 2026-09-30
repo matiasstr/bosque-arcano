@@ -21,6 +21,9 @@ set "BOSQUE_RESULT=%ERRORLEVEL%"
 if not "%BOSQUE_RESULT%"=="0" goto done
 "%BOSQUE_ENGINE%" --headless --path "%BOSQUE_ROOT%." --fixed-fps 120 --script res://tests/crater_tests.gd
 set "BOSQUE_RESULT=%ERRORLEVEL%"
+if not "%BOSQUE_RESULT%"=="0" goto done
+"%BOSQUE_ENGINE%" --headless --path "%BOSQUE_ROOT%." --fixed-fps 120 --script res://tests/save_tests.gd
+set "BOSQUE_RESULT=%ERRORLEVEL%"
 :done
 pause
 exit /b %BOSQUE_RESULT%

@@ -1,5 +1,13 @@
 # Verificación — Bosque Arcano 0.2
 
+## Guardado — 2026-09-30, rama `claude/terreno-alturas`
+
+Mismo entorno (Linux headless, sin GPU). Las cinco suites anteriores siguen sin fallos y sin cambios.
+
+- `tests/save_tests.gd` (nuevo): 23 comprobaciones, 0 fallos. Archivo: ausencia sin error, ida y vuelta de semilla/destruidos/excavación, sin temporal residual, archivo cortado, valor alterado (huella), otra versión del generador, excavación fuera de rango, recuperación del temporal tras un corte, error de escritura devuelto, peor caso acotado (toda la región excavada y 155 árboles: 180 KB). Juego: solo `main.tscn` guarda; la primera apertura crea el guardado; otra semilla lo reemplaza; el autoguardado espera 1 s; pausar guarda lo pendiente; al reabrir, misma semilla, terreno idéntico, mismos destruidos, nada flota y la colisión incluye el cráter; aviso de recuperación; archivo dañado apartado con aviso y mundo nuevo guardado.
+- Tiempos: escribir un guardado típico 0,3 ms (206 bytes); abrir el juego y recuperar un mundo con cráteres ~250 ms.
+- **No ejecutado:** cerrar la ventana real (el guardado al cerrar se probó solo por lectura del código), `capture.gd`, rutas de Windows.
+
 ## Cráteres — 2026-09-29, rama `claude/terreno-alturas`
 
 Mismo entorno (Linux headless, sin GPU). `run_tests` 40, `gesture_tests` 27, `destruction_tests` 8 y `terrain_tests` 39 siguen sin fallos, sin cambios en sus pruebas.

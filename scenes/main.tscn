@@ -4,3 +4,4 @@
 
 [node name="BosqueArcano" type="Node3D"]
 script = ExtResource("1")
+persistence = true

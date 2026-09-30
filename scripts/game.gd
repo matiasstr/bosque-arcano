@@ -8,6 +8,16 @@ const Target = preload("res://scripts/practice_target.gd")
 const Hud = preload("res://scripts/hud.gd")
 const Caster = preload("res://scripts/gesture_caster.gd")
 const Book = preload("res://scripts/spell_catalog.gd")
+const Save = preload("res://scripts/world_save.gd")
+const AUTOSAVE_DELAY := 1.0
+const RETRY_DELAY := 5.0
+## Only main.tscn turns this on, so tests never touch the player's save.
+@export var persistence := false
+var save_path := Save.DEFAULT_PATH
+## Seconds until the pending autosave; negative when nothing is pending.
+var save_wait := -1.0
+var last_save_error := OK
+var restoring := false
 var world_seed := 240926
 var forest: Node3D
 var explorer: CharacterBody3D
@@ -43,8 +53,47 @@ func _ready() -> void:
 	hud.new_seed_requested.connect(func(): regenerate(1 + (world_seed * 48271) % 999999998))
 	hud.respawn_requested.connect(respawn)
 	hud.sensitivity_changed.connect(func(value): explorer.sensitivity = value)
-	regenerate(world_seed)
+	if persistence:
+		_load_world()
+	else:
+		regenerate(world_seed)
 	set_paused(true)
+
+func _load_world() -> void:
+	var loaded := Save.read(save_path)
+	restoring = true
+	if loaded.ok:
+		regenerate(loaded.data.seed)
+		forest.restore(loaded.data.destroyed, loaded.data.dug)
+		_settle_targets()
+		restoring = false
+		hud.message.text = "Mundo recuperado · semilla %d · %d objetos destruidos%s" % [world_seed, loaded.data.destroyed.size(), " · terreno excavado" if not loaded.data.dug.is_empty() else ""]
+		hud.hint_time = 4.0
+		return
+	regenerate(world_seed)
+	restoring = false
+	if not loaded.missing:
+		Save.set_aside(save_path)
+		hud.message.text = "No se pudo cargar el guardado (%s). Quedó aparte como mundo.json.invalido; empieza un mundo nuevo." % loaded.reason
+		hud.hint_time = 6.0
+	save_world()
+
+func world_changed() -> void:
+	if persistence:
+		save_wait = AUTOSAVE_DELAY
+
+## Returns the write result; on failure the change stays pending and is retried later.
+func save_world() -> Error:
+	if not persistence:
+		return ERR_UNAVAILABLE
+	save_wait = -1.0
+	var data := Save.snapshot(world_seed, forest.destroyed_props, forest.description.terrain.heights_mm, forest.ground.terrain.heights_mm)
+	last_save_error = Save.write(save_path, data)
+	if last_save_error != OK:
+		save_wait = RETRY_DELAY
+		hud.message.text = "No se pudo guardar el mundo (%s). Se reintentará." % error_string(last_save_error)
+		hud.hint_time = 5.0
+	return last_save_error
 
 func _install_inputs() -> void:
 	for pair in [["forward", KEY_W], ["back", KEY_S], ["left", KEY_A], ["right", KEY_D], ["sprint", KEY_SHIFT], ["crouch", KEY_C], ["jump", KEY_SPACE]]:
@@ -109,7 +158,8 @@ func regenerate(value: int) -> void:
 	add_child(forest)
 	forest.prop_destroyed.connect(func(kind):
 		hud.message.text = "%s destruido" % kind
-		hud.hint_time = 2.5)
+		hud.hint_time = 2.5
+		world_changed())
 	forest.build(Generator.generate(world_seed))
 	for point in [Vector3(-12, 0, 3), Vector3(-9, 0, 1), Vector3(-6, 0, 3)]:
 		var target := Target.new()
@@ -122,6 +172,9 @@ func regenerate(value: int) -> void:
 	hud.set_seed(world_seed)
 	hud.show_cast("Ctrl + trazo prepara · Click izquierdo lanza")
 	hud.update_state(combat.mana, explorer.position, destroyed_count)
+	# Regenerating is an explicit reset: the new world replaces the saved one.
+	if persistence and not restoring:
+		save_world()
 
 func respawn() -> void:
 	caster.cancel()
@@ -133,6 +186,8 @@ func respawn() -> void:
 func set_paused(value: bool) -> void:
 	paused = value
 	if value:
+		if persistence and save_wait >= 0:
+			save_world()
 		if caster.active or not caster.prepared.is_empty():
 			hud.show_cast("Hechizo descartado al pausar · Ctrl prepara otro")
 		caster.cancel()
@@ -158,8 +213,12 @@ func _on_surface_hit(point: Vector3, collider: Object, spell: int) -> void:
 	if source.crater_radius <= 0 or not forest.terrain.sectors.has(collider):
 		return
 	if forest.carve_crater(point, source.crater_radius, source.crater_depth):
-		for target in targets:
-			target.position.y = minf(target.position.y, Generator.height_at(forest.ground, target.position.x, target.position.z))
+		_settle_targets()
+		world_changed()
+
+func _settle_targets() -> void:
+	for target in targets:
+		target.position.y = minf(target.position.y, Generator.height_at(forest.ground, target.position.x, target.position.z))
 
 func _on_damage(amount: float, destroyed: bool) -> void:
 	if destroyed:
@@ -167,6 +226,10 @@ func _on_damage(amount: float, destroyed: bool) -> void:
 	hud.hit_feedback(amount, destroyed)
 
 func _physics_process(delta: float) -> void:
+	if save_wait >= 0:
+		save_wait -= delta
+		if save_wait < 0:
+			save_world()
 	if not paused:
 		for target in targets:
 			target.tick(delta)
@@ -185,5 +248,7 @@ func _input(event: InputEvent) -> void:
 			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and persistence and save_wait >= 0:
+		save_world()
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and is_instance_valid(hud):
 		set_paused(true)

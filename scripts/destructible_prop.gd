@@ -16,3 +16,10 @@ func take_damage(amount: float) -> void:
 		set_deferred("collision_layer", 0)
 		destroyed.emit(prop_id, kind)
 		queue_free()
+
+## Loading a save: leave without emitting destruction (no message, no counters).
+func remove_quietly() -> void:
+	broken = true
+	visible = false
+	collision_layer = 0
+	queue_free()

@@ -138,6 +138,25 @@ func carve_crater(point: Vector3, radius: float, depth: float) -> bool:
 	_settle_near(Vector2(edit.x, edit.z), radius + 2.5)
 	return true
 
+## Applies a loaded save over the freshly built base: terrain first, then objects settle,
+## then destroyed props leave without destruction messages.
+func restore(destroyed: Array, dug: Array) -> void:
+	if not dug.is_empty():
+		var base: PackedInt32Array = description.terrain.heights_mm
+		var heights: PackedInt32Array = ground.terrain.heights_mm
+		for n in range(0, dug.size(), 2):
+			var k := int(dug[n])
+			heights[k] = base[k] - int(dug[n + 1])
+		ground.terrain.heights_mm = heights
+		var samples: int = ground.terrain.samples
+		terrain.rebuild(Rect2i(0, 0, samples, samples))
+		_settle_near(Vector2.ZERO, 100.0)
+	for node in get_children():
+		var id = node.get("prop_id")
+		if id != null and destroyed.has(id) and not node.broken:
+			node.remove_quietly()
+			destroyed_props[id] = true
+
 ## Objects only ever move down: craters never raise the ground.
 func _settle_near(center: Vector2, reach: float) -> void:
 	for node in get_children():

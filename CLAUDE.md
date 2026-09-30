@@ -5,6 +5,7 @@
 @docs/CONTEXTO-PARA-CLAUDE.md
 @docs/ARQUITECTURA-RPG-MAGIA.md
 @docs/TERRENO.md
+@docs/GUARDADO.md
 
 `docs/CONTEXTO-PARA-CLAUDE.md` y `docs/ARQUITECTURA-RPG-MAGIA.md` son del 24–28/09 y describen el estado previo a esta bitácora; ante diferencias manda la entrada más reciente de abajo.
 
@@ -20,6 +21,7 @@ $G --headless --path . --fixed-fps 120 --script res://tests/gesture_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/destruction_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/terrain_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/crater_tests.gd
+$G --headless --path . --fixed-fps 120 --script res://tests/save_tests.gd
 ```
 
 `tests/capture.gd` necesita GPU: no correrlo en la nube. La importación genera `.uid` e `.import` que no venían en el ZIP; no se versionan desde la nube (el editor en la PC los regenera).
@@ -79,3 +81,24 @@ El usuario pidió continuar con el próximo paso ("continue with this") antes de
 **Revisar en la PC** (además de la lista anterior): `Verificar.cmd` debe dar 40 + 27 + 8 + 39 + 19. En partida, con 2 (Brasa) disparar al suelo: ver el cráter, entrar y salir caminando, disparar varias veces al mismo punto, disparar sobre un borde entre sectores (X o Z = ±11) y buscar grietas, disparar cerca de árboles, rocas, marcadores y cristales y ver que no floten. Árboles al borde del cráter se hunden enteros: decidir si eso alcanza o si hay que romperlos.
 
 **Próximo paso:** guardado local (seed, versión, `destroyed_props` y `terrain_edits` en `user://`), reconstruyendo base + ediciones al cargar.
+
+### 2026-09-30 — misma sesión: guardado local
+
+El usuario pidió seguir con el próximo paso y, al terminarlo, revisar el motor de cálculo.
+
+**Hecho** (plan y riesgos en `docs/GUARDADO.md`):
+- `world_save.gd` (nuevo): `user://mundo.json` con formato, semilla, versión del generador, IDs destruidos, excavación como pares `[muestra, mm]` (acotada por la grilla, no crece con la cantidad de impactos) y huella SHA-256. Escritura en `.tmp` y reemplazo; recuperación del `.tmp` si se cortó entre ambos pasos. Validación completa al leer; un archivo inválido se aparta como `.invalido` y nunca se pisa.
+- `game.gd`: `persistence` exportado, activo solo en `main.tscn` (los tests no tocan la partida real). Autoguardado 1 s después del último cambio, al pausar/perder foco y al cerrar; regenerar o cambiar semilla reemplaza el guardado. Errores de escritura con aviso y reintento a los 5 s; nunca se anuncia un guardado exitoso falso (solo se avisan la recuperación y los errores).
+- `forest.gd` `restore()` y `destructible_prop.gd` `remove_quietly()`: aplican alturas, reconstruyen los 9 sectores, bajan objetos y retiran lo destruido sin mensajes.
+- Decisiones conservadoras: un guardado de otra versión del generador no se migra (se aparta con aviso); no se guardan ajustes, posición del jugador, maná ni cristales; la lista `terrain_edits` es solo de la sesión (el guardado usa el resultado).
+- `tests/save_tests.gd` (23), agregado a `Verificar.cmd`.
+
+**Verificado ejecutando:** `run_tests` 40, `gesture_tests` 27, `destruction_tests` 8, `terrain_tests` 39, `crater_tests` 19, `save_tests` 23; 0 fallos. Guardado típico 0,3 ms; peor caso 180 KB; reabrir con cráteres ~250 ms.
+
+**No verificado:** cierre real de ventana, rutas de `%APPDATA%` en Windows, `capture.gd`.
+
+**Consumo:** sin acceso al saldo; no hay cifra.
+
+**Revisar en la PC:** `Verificar.cmd` = 40 + 27 + 8 + 39 + 19 + 23. En partida: romper un árbol y hacer un cráter, cerrar con la X, abrir de nuevo y ver el aviso "Mundo recuperado" con el cráter y el árbol faltante. Buscar `mundo.json` en `%APPDATA%\BosqueArcano`. Elegir otra semilla desde el menú y comprobar que al reabrir aparece esa.
+
+**Próximo paso:** decidir el problema del motor de cálculo (ver resumen de la sesión) antes de programarlo.
