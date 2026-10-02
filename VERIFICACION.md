@@ -1,5 +1,12 @@
 # Verificación — Bosque Arcano 0.2
 
+## Motor de cálculo, problema A — 2026-10-02, rama `claude/terreno-alturas`
+
+Mismo entorno. No se tocó código del juego; las seis suites del juego se volvieron a ejecutar sin fallos.
+
+- `tests/math_tests.gd` (nuevo): 19 comprobaciones, 0 fallos. Instancia reproducible por semilla; inicio y destino libres (170 de 961 celdas bloqueadas); la ruta de Dijkstra es válida y el evaluador da su mismo costo; el verificador rechaza 6 reglas rotas con su motivo; 200 rutas aleatorias/mutadas/combinadas válidas y ninguna mejor que el óptimo; búsquedas reproducibles; mismo presupuesto para ambas estrategias; un cráter cambia instancia y óptimo; árboles destruidos desbloquean celdas; registro con una línea por evaluación, padres, operador, hashes y detección de línea cortada.
+- Medido: óptimo 48,238 en 7 ms; con 1500 evaluaciones, brecha aleatoria 6,7–9,5 %, evolutiva 0,1–3,2 %; tres pares de búsquedas en ~3,5 s.
+
 ## Guardado — 2026-09-30, rama `claude/terreno-alturas`
 
 Mismo entorno (Linux headless, sin GPU). Las cinco suites anteriores siguen sin fallos y sin cambios.

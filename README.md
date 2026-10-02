@@ -58,6 +58,7 @@ Los accesos usan el motor portátil ya existente en `../duelo-arcano/tools/godot
 | `scripts/world_generator.gd` | Generación de una descripción serializable; no crea nodos ni conoce combate. RNG separado para layout, árboles y rocas. |
 | `scripts/forest.gd` | Convierte la descripción en geometría, colisiones y señales del camino; apoya cada objeto en el terreno. |
 | `scripts/terrain.gd` | Malla y colisión por sector a partir de las alturas; reconstruye solo los sectores editados. |
+| `scripts/math/` | Motor de cálculo sin nodos: contrato de problema, ruta sobre el terreno con óptimo exacto, búsquedas aleatoria/evolutiva y registro JSONL. Todavía no está conectado al juego. |
 | `scripts/world_save.gd` | Lectura, validación y escritura del guardado; no decide cuándo guardar. |
 | `scripts/terrain_edit.gd` | Excavación pura de cráteres sobre las alturas (milímetros enteros), con límite de pendiente. |
 | `scripts/explorer.gd` | Movimiento y cámara, con bloqueo explícito de orientación durante trazos. |
@@ -81,9 +82,9 @@ La auditoría anterior y la arquitectura completa están en `docs/ARQUITECTURA-R
 
 ## Verificación
 
-**Verificar.cmd** ejecuta 40 comprobaciones de mundo/combate, 27 de gestos/carga, 8 de destrucción, 39 de terreno, 19 de cráteres y 23 de guardado: **156 comprobaciones sin ventana**. Las pruebas de guardado usan su propia carpeta y no tocan la partida real.
+**Verificar.cmd** ejecuta 40 comprobaciones de mundo/combate, 27 de gestos/carga, 8 de destrucción, 39 de terreno, 19 de cráteres, 23 de guardado y 19 del motor de cálculo: **175 comprobaciones sin ventana**. Las pruebas de guardado usan su propia carpeta y no tocan la partida real.
 
-`tests/capture.gd` agrega 23 comprobaciones gráficas con input: cámara, movimiento durante trazo, preparación sin disparo, nueva puntería al lanzar, ambos hechizos, cancelación por click derecho y pausa. Total: **179 comprobaciones**. Con terreno, cráteres y guardado, `capture.gd` todavía no se ejecutó (requiere GPU). También genera capturas reales del bosque y las guías. Ver `VERIFICACION.md`.
+`tests/capture.gd` agrega 23 comprobaciones gráficas con input: cámara, movimiento durante trazo, preparación sin disparo, nueva puntería al lanzar, ambos hechizos, cancelación por click derecho y pausa. Total: **198 comprobaciones**. Con terreno, cráteres y guardado, `capture.gd` todavía no se ejecutó (requiere GPU). También genera capturas reales del bosque y las guías. Ver `VERIFICACION.md`.
 
 ## Alcance y continuación
 

@@ -23,6 +23,7 @@ $G --headless --path . --fixed-fps 120 --script res://tests/destruction_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/terrain_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/crater_tests.gd
 $G --headless --path . --fixed-fps 120 --script res://tests/save_tests.gd
+$G --headless --path . --script res://tests/math_tests.gd
 ```
 
 `tests/capture.gd` necesita GPU: no correrlo en la nube. La importación genera `.uid` e `.import` que no venían en el ZIP; no se versionan desde la nube (el editor en la PC los regenera).
@@ -103,3 +104,20 @@ El usuario pidió seguir con el próximo paso y, al terminarlo, revisar el motor
 **Revisar en la PC:** `Verificar.cmd` = 40 + 27 + 8 + 39 + 19 + 23. En partida: romper un árbol y hacer un cráter, cerrar con la X, abrir de nuevo y ver el aviso "Mundo recuperado" con el cráter y el árbol faltante. Buscar `mundo.json` en `%APPDATA%\BosqueArcano`. Elegir otra semilla desde el menú y comprobar que al reabrir aparece esa.
 
 **Próximo paso:** que el usuario elija el primer problema del motor de cálculo (`docs/MOTOR-CALCULO.md`: A ruta sobre el terreno, recomendada para calibrar; B viajante chico; C empaquetado; D problema propio) y recién entonces programar el primer incremento descrito ahí.
+
+### 2026-10-02 — misma sesión: motor de cálculo, problema A
+
+El usuario eligió A (ruta sobre el terreno) para calibrar el motor.
+
+**Hecho** (detalle en `docs/MOTOR-CALCULO.md`, sección Estado): `scripts/math/` con `problem.gd` (contrato), `route_problem.gd` (instancia sobre el terreno real con cráteres y destruidos, verificador con motivos, evaluador, óptimo exacto por Dijkstra, operadores), `search.gd` (aleatoria y evolutiva con igual presupuesto y semilla) y `experiment_log.gd` (`user://experimentos.jsonl`). `tests/math_tests.gd` (19) en `Verificar.cmd`. No se conectó al juego ni a la interfaz. `reference()` se llamó `optimum()` porque `RefCounted` ya tiene `reference()`.
+
+**Verificado ejecutando:** las seis suites del juego (156) y `math_tests` 19; 0 fallos. Óptimo 48,238 en 7 ms; brecha al óptimo con 1500 evaluaciones: aleatoria 6,7–9,5 %, evolutiva 0,1–3,2 %.
+
+**No verificado:** nada visual (no hay UI del motor). El registro real `user://experimentos.jsonl` no se escribe todavía desde el juego.
+
+**Consumo:** sin acceso al saldo; no hay cifra.
+
+**Revisar en la PC:** `Verificar.cmd` debe sumar `math_tests` 19 a las seis suites anteriores.
+
+**Próximo paso:** propuestas humanas (modo mapa: dibujar la ruta, adaptador trazo → celdas con reparación registrada) y comparación humano/azar/evolutivo/híbrido con presupuestos comparables y tiempo humano aparte.
+
